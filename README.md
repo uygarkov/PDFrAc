@@ -20,3 +20,9 @@ Simply install using the pip command:
 ```bash
 pip install -i https://test.pypi.org/simple/ uygarkov-PDFrAc==1.0.0
 ```
+
+Then you can run the code using the command:
+
+```bash
+pdfrac
+```
