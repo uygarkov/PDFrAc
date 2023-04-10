@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uygarkov_PDFrAc"
+description = "PDF Renamer for academic articles that are either scanned or downloaded from journal websites."
+readme = "README.md"
+version = "1.0.5"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+dependencies = [
+		"requests",
+		"pypdf2",
+		"habanero",
+]
+[project.scripts]
+pdfrac ="PDFrAc.renamer:main"
