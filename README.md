@@ -18,7 +18,7 @@ When the user downloads an article from the journal websites, those PDFs usually
 Simply install using the pip command:
 
 ```bash
-pip install -i https://test.pypi.org/simple/ uygarkov-PDFrAc==1.0.0
+pip install -i https://test.pypi.org/simple/ uygarkov-PDFrAc==1.0.5
 ```
 
 Then you can run the code using the command:
