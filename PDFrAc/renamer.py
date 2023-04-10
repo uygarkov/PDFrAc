@@ -18,17 +18,20 @@ def surprise_me(pdf_dir):
 def get_doi(title):
     cr = Crossref()
     res = cr.works(query=title, limit=1)
-    doi = res['message']['items'][0]['DOI']
+    try:
+        doi = res['message']['items'][0]['DOI']
+    except:
+        return None
     return doi
 
 
 # Moves files according to its type
 def move_files(directory, filepath, name, option):
     if option == 'duplicate':
-        dir_path = directory+r'\duplicates'
+        dir_path = directory + r'\duplicates'
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-        new_path = dir_path+r'\{}'.format(name)
+        new_path = dir_path + r'\{}'.format(name)
         if os.path.exists(new_path):
             try:
                 os.remove(filepath)
@@ -43,8 +46,8 @@ def move_files(directory, filepath, name, option):
                 move_files(directory, filepath, name, 'exception')
                 return None
     elif option == 'exception':
-        dir_path = directory+r'\exception'
-        new_path = dir_path+r'\{}'.format(name)
+        dir_path = directory + r'\exception'
+        new_path = dir_path + r'\{}'.format(name)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         try:
@@ -53,8 +56,8 @@ def move_files(directory, filepath, name, option):
         except:
             return None
     elif option == 'scanned':
-        dir_path = directory+r'\scanned'
-        new_path = dir_path+r'\{}'.format(name)
+        dir_path = directory + r'\scanned'
+        new_path = dir_path + r'\{}'.format(name)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         try:
@@ -105,7 +108,8 @@ def rename_file(directory, filepath, title, surnames, year, counter, total_count
         new_filename = r"{}.pdf".format(new_filename[:250])
     try:
         os.rename(filepath, os.path.join(os.path.dirname(filepath), new_filename))
-        print("[{}%] {} is renamed as {}".format(min(round(100*float(counter)/float(total_count)), 100), filename, new_filename))
+        print("[{}%] {} is renamed as {}".format(min(round(100 * float(counter) / float(total_count)), 100), filename,
+                                                 new_filename))
     except:
         move_files(directory, filepath, new_filename, 'duplicate')
         return None
@@ -125,21 +129,22 @@ def process_original_pdfs(directory):
         count += 1
         if filename.endswith(".pdf"):
             filepath = os.path.join(directory, filename)
-            try:
-                # open the PDF file
-                with open(filepath, 'rb') as f:
-                    pdf = PyPDF2.PdfReader(f)
+            # open the PDF file
+            with open(filepath, 'rb') as f:
+                pdf = PyPDF2.PdfReader(f)
+                writer = PyPDF2.PdfWriter()
+                try:
                     pdf_title = pdf.metadata.title
-                    f.close()
-            except:
-                # if the PDF file is already open, print a message
-                print("The PDF file: {} is already open, please close it and run the program again.".format(filepath))
-            if pdf_title is None:
+                except:
+                    pdf_title = "Unknown"
+
+                f.close()
+            if pdf_title == "Unknown":
                 exception_counter += 1
                 name = "exception{}.pdf".format(str(exception_counter))
                 move_files(directory, filepath, name, 'exception')
                 continue
-            elif pdf_title[:3]=="doi":
+            elif pdf_title[:3] == "doi":
                 surnames, year, pdf_title = get_authors_and_year(pdf_title.replace("doi:", ""))
             elif pdf_title.endswith(".qxd"):
                 exception_counter += 1
@@ -152,8 +157,14 @@ def process_original_pdfs(directory):
                 move_files(directory, filepath, name, 'scanned')
                 continue
             else:
-                doi = get_doi(pdf_title)
-                surnames, year, pdf_title = get_authors_and_year(doi)
+                if get_doi(pdf_title):
+                    doi = get_doi(pdf_title)
+                    surnames, year, pdf_title = get_authors_and_year(doi)
+                else:
+                    exception_counter += 1
+                    name = "exception{}.pdf".format(str(exception_counter))
+                    move_files(directory, filepath, name, 'exception')
+                    continue
             rename_file(directory, filepath, pdf_title, surnames, year, count, total_count)
 
 
@@ -175,114 +186,108 @@ def process_scanned_pdfs(directory, titles):
             rename_file(directory, filepath, pdf_title.title(), surnames, year, count, total_count)
 
 
-def initiation_time(raw_path, opt = None):
-    print("\nMake sure that all the PDF files are closed. You have 10 seconds to check.")
+def initiation_time(raw_path, opt=None):
+    print("\nMake sure that all PDF files are closed. You have 10 seconds to check.")
     text = "10..9..8..7..6..5..4..3..2..1"
     for char in text:
         print(char, end='', flush=True)
-        time.sleep(10/len(text))
+        time.sleep(10 / len(text))
     surprise_me(raw_path)
     if opt is None:
         os.system('cls')
 
+
 # main
+def main():
+    os.system('cls')
+    print('-------------------------------------------------------------------------\n'
+          '                        PDF RENAMER for Academia!!                       \n'
+          '                            v1.0.4 (March 2023)                          \n'
+          '                            Created by uygarkov                          \n'
+          '                          www.github.com/uygarkov                        \n'
+          '-------------------------------------------------------------------------')
+    time.sleep(2)
 
-os.system('cls')
-print('-------------------------------------------------------------------------\n'
-      '                        PDF RENAMER for Academia!!                       \n'
-      '                                March 2023                               \n'
-      '                            Created by uygarkov                          \n'
-      '                          www.github.com/uygarkov                        \n'
-      '-------------------------------------------------------------------------')
-time.sleep(2)
+    scan_or_original = input("Is your PDF scanned or original copy? \n"
+                             "S : Scanned\n"
+                             "O : Original\n"
+                             "[O/S]? ")
 
-scan_or_original = input("Is your PDF scanned or original copy? \n"
-                         "S : Scanned\n"
-                         "O : Original\n"
-                         "[O/S]? ")
-
-while True:
-    user_input = input("Enter the path of your directory: ")
-    #user_input = "E:\\Desktop\\Lecture\\UniStuttgart\\WS2022\\SummerSchool"
-    raw_path = r"{}".format(user_input)
-    secured_path = raw_path
-    if scan_or_original == 'S':
-        titles = list()
-        path_to_txt = raw_path + r"\titles.txt"
-        time.sleep(2)
-        text = "\nPlease make sure that you wrote the titles of articles in the titles.txt in your directory.\n" \
-               "Sequence is important! Example:\n" \
-               "Article Title 1\n" \
-               "Article Title 2\n" \
-               "DONT FORGET TO SAVE THE .TXT DOCUMENT!\n" \
-               "EVERY LINE MUST CONTAIN ONE TITLE, DONT USE 2 LINES FOR ONE ARTICLE!!\n" \
-               "You have 10 seconds if you still did not save the .txt file.\n" \
-            "Please close the PDF files otherwise the program will fail\n"
-
-        for char in text:
-            print(char, end='', flush=True)
-            time.sleep(10/len(text))
-
-        initiation_time(raw_path, "S")
-        if os.path.exists(path_to_txt):
-            os.system('cls')
-            print("\nGreat! Reading the .txt file...")
+    while True:
+        user_input = input("Enter the path of your directory: ")
+        raw_path = r"{}".format(user_input)
+        secured_path = raw_path
+        if scan_or_original == 'S':
+            titles = list()
+            path_to_txt = raw_path + r"\titles.txt"
             time.sleep(2)
-            print('Process started!')
-            time.sleep(2)
-            start_time = time.time()
-            time.sleep(3)
-            with open(path_to_txt, 'r') as txt:
-                for lines in txt:
-                    titles.append(lines.rstrip().title())
-                txt.close()
-            process_scanned_pdfs(raw_path, titles)
-            end_time = time.time()
-            print("\nThe all renaming process completed in {} seconds!".format(round(end_time - start_time)))
-            print("The program will shutdown in 5 seconds")
-            time.sleep(5)
-            break
+            text = "\nPlease make sure that you wrote the titles of articles in the titles.txt in your directory.\n" \
+                   "Sequence is important! Example:\n" \
+                   "Article Title 1\n" \
+                   "Article Title 2\n" \
+                   "DONT FORGET TO SAVE THE .TXT DOCUMENT!\n" \
+                   "EVERY LINE MUST CONTAIN ONE TITLE, DONT USE 2 LINES FOR ONE ARTICLE!!\n" \
+                   "You have 10 seconds if you still did not save the .txt file.\n" \
+                   "Please close the PDF files otherwise the program will fail\n"
 
-        else:
-            time.sleep(3)
-            print("\nI could not find any titles.txt file but I created one for you! Once you wrote the titles,\n"
-                  "run me again. See you soon!")
-            filename = "titles.txt"
-            with open(path_to_txt, "w") as f:
-                f.write("CLEAR WHOLE PAGE\n"
-                        "Please make sure that you wrote the titles of articles in the titles.txt in your directory.\n"
-                        "Sequence is important! Example:\n"
-                        "Article Title 1\n"
-                        "Article Title 2\n"
-                        "CLEAR WHOLE PAGE")
-            filepath = os.path.join(path_to_txt, filename)
-            time.sleep(3)
-            print("\nFile created at:", filepath)
-            exit()
-    elif scan_or_original == 'O':
-        if os.path.exists(user_input):
-            print('The file found!\n')
-            time.sleep(2)
-            initiation_time(raw_path)
-            print('Process started!')
-            time.sleep(2)
-            start_time = time.time()
-            process_original_pdfs(raw_path)
-            end_time = time.time()
-            print("\nThe all renaming process completed in {} seconds!".format(round(end_time - start_time)))
-            original_path = secured_path + r'\original'
-            if not os.path.exists(original_path):
-                os.makedirs(original_path)
-            for filename in os.listdir(secured_path):
-                filename = r"\{}".format(filename)
-                if filename.endswith(".pdf"):
-                    filepath = os.path.join(secured_path, filename)
-                    new_path = os.path.join(original_path, filename)
-                    move(file_path, original_path)
-            print("All the original files moved to 'original' folder")
-            print("The program will shutdown in 5 seconds")
-            time.sleep(5)
-            break
-        else:
-            print('The specified file does NOT exist! Make sure that it does not contain any forbidden characters\n'
-                  'i.e " , ? * . \ /\n')
+            for char in text:
+                print(char, end='', flush=True)
+                time.sleep(10 / len(text))
+
+            initiation_time(raw_path, "S")
+            if os.path.exists(path_to_txt):
+                os.system('cls')
+                print("\nGreat! Reading the .txt file...")
+                time.sleep(2)
+                print('Process started!')
+                time.sleep(2)
+                start_time = time.time()
+                time.sleep(3)
+                with open(path_to_txt, 'r') as txt:
+                    for lines in txt:
+                        titles.append(lines.rstrip().title())
+                    txt.close()
+                process_scanned_pdfs(raw_path, titles)
+                end_time = time.time()
+                print("\nThe all renaming process completed in {} seconds!".format(round(end_time - start_time)))
+                print("The program will shutdown in 5 seconds")
+                time.sleep(5)
+                break
+
+            else:
+                time.sleep(3)
+                print("\nI could not find any titles.txt file but I created one for you! Once you wrote the titles,\n"
+                      "run me again. See you soon!")
+                filename = "titles.txt"
+                with open(path_to_txt, "w") as f:
+                    f.write("CLEAR WHOLE PAGE\n"
+                            "Please make sure that you wrote the titles of articles in the titles.txt in your directory.\n"
+                            "Sequence is important! Example:\n"
+                            "Article Title 1\n"
+                            "Article Title 2\n"
+                            "CLEAR WHOLE PAGE")
+                filepath = os.path.join(path_to_txt, filename)
+                time.sleep(3)
+                print("\nFile created at:", filepath)
+                exit()
+        elif scan_or_original == 'O':
+            if os.path.exists(user_input):
+                print('The file found!\n')
+                time.sleep(2)
+                initiation_time(raw_path)
+                print('Process started!')
+                time.sleep(2)
+                start_time = time.time()
+                process_original_pdfs(raw_path)
+                end_time = time.time()
+                print("\nThe all renaming process completed in {} seconds!".format(round(end_time - start_time)))
+                print("The program will shut down in 5 seconds")
+                time.sleep(5)
+                break
+            else:
+                print('The specified file does NOT exist! Make sure that it does not contain any forbidden characters\n'
+                      'i.e " , ? * . \ /\n')
+
+
+if __name__ == '__main__':
+    main()
