@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "uygarkov_PDFrAc"
+name = "uygarkov-PDFrAc"
 description = "PDF Renamer for academic articles that are either scanned or downloaded from journal websites."
 readme = "README.md"
 version = "1.0.5"
